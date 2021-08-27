@@ -2,6 +2,8 @@ from flask import Flask, jsonify, request, redirect, send_file, abort
 import os
 from process_video import process_video
 import json
+import random
+
 
 app = Flask(__name__)
 # Upload video to files folder
@@ -110,4 +112,74 @@ def labelsHandler():
         resp = jsonify(e)
         resp.status_code = 400
         return resp
+
+# Save labeled data and move target file into training set folder
+@app.route('/api/v1/label', methods=['POST'])
+def labelHandler():
+    try:
+        folder = request.args.get('folder')
+        frame = request.args.get('frame')
+        data = request.get_json(silent=True)
+        image_file = os.path.join(os.getcwd(), folder, frame)
+        print(f'data = {data}')
+        print(f'file = {image_file}')
+        labelfile = os.path.join(os.getcwd(), 'labeled', 'images', '{folder}-{frame}')
+        with open(labelfile, 'w+') as f:
+            json.dump(data, f)
+            # Move target file to training set folder
+            target = os.path.join(os.getcwd(), 'labeled', 'labels', '{folder}-{frame}')
+            os.rename(image_file, target)
+            resp = jsonify(f"Successfully saved labels to {labelfile}")
+            resp.status_code = 200
+            return resp
+    except Exception as e:
+        resp = jsonify(e)
+        resp.status_code = 400
+        return resp
+
+# Get random image from image set
+@app.route('/api/v1/get_next', methods=['GET'])
+def nextHandler():
+    folder = random.choice(list(training_files.keys()))
+    frame = random.choice(training_files[folder])
+    data = {'folder': folder, 'frame': frame}
+    resp = jsonify(data)
+    return resp #redirect(f"/api/v1/file?folder={folder}&frame={frame}")
+
+def init(basepath):
+    videospath = os.path.join(basepath, 'files')
+    if not os.path.exists(videospath):
+        os.makedirs(videospath)
+    
+    imagespath = os.path.join(basepath, 'processed')
+    if not os.path.exists(imagespath):
+        os.makedirs(imagespath)
+
+    labeledpath = os.path.join(basepath, 'labeled', 'images')
+    if not os.path.exists(labeledpath):
+        os.makedirs(labeledpath)
+
+    labeledpath = os.path.join(basepath, 'labeled', 'labels')
+    if not os.path.exists(labeledpath):
+        os.makedirs(labeledpath)
+
+def get_list_of_files() -> dict:
+    base_folder = os.path.join(os.getcwd(), 'processed')
+    folders = os.listdir(base_folder)
+    all_files = dict()
+    # Iterate over all the entries
+    for folder in folders:
+        frames = []
+        subfolder = os.path.join(base_folder, folder)
+        if os.path.isdir(subfolder):
+            images = os.listdir(os.path.join(base_folder, folder))
+            for image in images:
+                frames.append(image)
+            all_files[folder] = frames
+                
+    return all_files
+
+path = os.getcwd()
+init(path)
+training_files = get_list_of_files()
 app.run()

@@ -1,13 +1,12 @@
 import React,{Component} from 'react';
 import { Alert, Uploader, List, Button, Icon, Header, Container, Content  } from 'rsuite';
-
+import axios from 'axios';
 
 const styleSpaceBetween = {
   display: 'flex',
   justifyContent: 'space-around',
   alignItems: 'center',
   height: '20px',
-  // margin: '10px'
 };
 
 export default class VideoUploader extends Component {
@@ -30,7 +29,7 @@ export default class VideoUploader extends Component {
 
     processVideo = (video) => {
       this.setState({processing:[...this.state.processing, video]})
-      const axios = require('axios');
+      // 
       axios.post('/api/v1/process?filename='+video)
         .then(response => {
           this.setState({processing: this.state.processing.filter(function(item) { 
@@ -69,8 +68,8 @@ export default class VideoUploader extends Component {
                 {this.state.uploadedVideos.map((item, index) => (
                   <List.Item key={index} index={index}>
                     <div style={styleSpaceBetween}>
-                    {item}
-                    { this.renderListButton(item) }
+                      {item}
+                      { this.renderListButton(item) }
                     </div>
                   </List.Item>
                 ))}
@@ -80,7 +79,7 @@ export default class VideoUploader extends Component {
       }
     }
     getUploaded = () => {
-      const axios = require('axios');
+      
       axios.get('/api/v1/upload')
         .then(response => {
           this.setState({uploadedVideos: response.data})
@@ -93,7 +92,7 @@ export default class VideoUploader extends Component {
         });  
     }
     getStatus = () => {
-      const axios = require('axios');
+      
       axios.get('/api/v1/process')
         .then(response => {
           this.setState({processedVideos: response.data})
